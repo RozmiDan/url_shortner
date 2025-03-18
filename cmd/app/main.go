@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/RozmiDan/url_shortener/db"
 	"github.com/RozmiDan/url_shortener/internal/config"
 	redirect_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/redirect"
 	save_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/save"
@@ -12,6 +13,7 @@ import (
 	"github.com/RozmiDan/url_shortener/pkg/logger"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/jackc/pgx"
 )
 
 func main() {
@@ -21,9 +23,20 @@ func main() {
 	logger.Info("url-shortner started")
 	logger.Debug("debug mode")
 
+	pgxConf := pgx.ConnConfig{
+		Host:     cnfg.PostgreURL.Host,
+		Port:     cnfg.PostgreURL.Port,
+		Database: cnfg.PostgreURL.Database,
+		User:     cnfg.PostgreURL.User,
+		Password: cnfg.PostgreURL.Password,
+	}
+
+	db.SetupPostgres(pgxConf, logger)
+	logger.Info("Migrations completed successfully")
+
 	storage, err := postgre.New(cnfg.PostgreURL.URL)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("Cant open database", err)
 		os.Exit(1)
 	}
 

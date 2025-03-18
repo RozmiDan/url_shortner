@@ -25,6 +25,10 @@ func New(DBurl string) (*Storage, error) {
 	return &Storage{conn: connect}, nil
 }
 
+func NewFromConn(conn *pgx.Conn) *Storage {
+	return &Storage{conn: conn}
+}
+
 func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
 	const op = "storage.postgre.SaveURL"
 
