@@ -8,7 +8,7 @@ import (
 	redirect_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/redirect"
 	save_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/save"
 	middleware_logger "github.com/RozmiDan/url_shortener/internal/http-server/middleware"
-	"github.com/RozmiDan/url_shortener/internal/storage/sqlite"
+	"github.com/RozmiDan/url_shortener/internal/storage/postgre"
 	"github.com/RozmiDan/url_shortener/pkg/logger"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -21,7 +21,7 @@ func main() {
 	logger.Info("url-shortner started")
 	logger.Debug("debug mode")
 
-	storage, err := sqlite.New(cnfg.StoragePath)
+	storage, err := postgre.New(cnfg.PostgreURL.URL)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)

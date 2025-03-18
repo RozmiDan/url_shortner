@@ -26,7 +26,6 @@ func New(dbPath string) (*Storage, error) {
 			id INTEGER PRIMARY KEY,
 			alias TEXT NOT NULL UNIQUE,
 			url TEXT NOT NULL);
-		)
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
