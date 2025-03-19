@@ -1,15 +1,25 @@
-FROM golang:1.23-alpine
+FROM golang:1.23 AS builder
 
 WORKDIR /app
 
-# Копируем исходники проекта
+COPY go.mod go.sum ./
+
+RUN go mod download
+
 COPY . .
 
-# Объявляем переменную окружения, указывающую путь к конфигу внутри контейнера
-ENV CONFIG_PATH="/app/config/config.yaml"
+RUN go build -o url_shortener ./cmd/app/main.go
 
-RUN go mod tidy && go build -o app ./cmd/app
+FROM debian:latest
+
+WORKDIR /app
+
+COPY --from=builder /app/url_shortener /app/url_shortener
+
+COPY config/config.yaml /app/config.yaml
+
+ENV CONFIG_PATH="/app/config.yaml"
 
 EXPOSE 8080
 
-CMD ["./app"]
+CMD ["/app/url_shortener"]

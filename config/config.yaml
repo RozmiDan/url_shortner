@@ -1,0 +1,20 @@
+env: "local"
+
+storage_path: "./storage/storage.db"
+
+app:
+  name:     "url_shortener"
+  version:  "1.0.0"
+
+http:
+  port:         ":8080"
+  timeout:      4s
+  idle_timeout: 60s
+
+postgres:
+  url:          "postgres://url_shortner:user_password@localhost:5432/mydb?sslmode=disable"
+  host:         "postgres"
+  port:         5432
+  database:     "mydb"     
+  user:         "url_shortner"
+  password:     "user_password"

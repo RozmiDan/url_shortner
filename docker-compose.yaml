@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  postgres:
+    container_name: 'url_shortener_postgres'
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_HOST:      "${POSTGRES_HOST}"
+      POSTGRES_DB:        "${POSTGRES_DB}"
+      POSTGRES_USER:      "${POSTGRES_USER}"
+      POSTGRES_PASSWORD:  "${POSTGRES_PASSWORD}"
+      POSTGRES_PORT:      "${POSTGRES_PORT}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - internal
+
+  app:
+    build: .
+    container_name: url_shortener_app
+    depends_on:
+      - postgres
+    environment:
+      CONFIG_PATH: "/app/config.yaml"
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["/app/url_shortener"]
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+
+networks:
+  internal:
+    driver: bridge
