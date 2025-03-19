@@ -10,6 +10,8 @@ COPY . .
 
 RUN go build -o url_shortener ./cmd/app/main.go
 
+RUN ls -lah /app
+
 FROM debian:latest
 
 WORKDIR /app

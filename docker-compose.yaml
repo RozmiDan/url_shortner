@@ -21,6 +21,7 @@ services:
   app:
     build: .
     container_name: url_shortener_app
+    restart: always 
     depends_on:
       - postgres
     environment:
@@ -28,11 +29,16 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - .:/app
+      - ./config/config.yaml:/app/config.yaml
     working_dir: /app
     command: ["/app/url_shortener"]
     networks:
       - internal
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres_data:
