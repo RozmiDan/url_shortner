@@ -11,8 +11,10 @@ import (
 
 	"github.com/RozmiDan/url_shortener/db"
 	"github.com/RozmiDan/url_shortener/internal/config"
+	delete_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/delete"
 	redirect_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/redirect"
 	save_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/save"
+	update_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/update"
 	middleware_logger "github.com/RozmiDan/url_shortener/internal/http-server/middleware"
 	"github.com/RozmiDan/url_shortener/internal/storage/postgre"
 	"github.com/RozmiDan/url_shortener/pkg/logger"
@@ -48,12 +50,16 @@ func Run(cnfg *config.Config) {
 	logger.Info("Connected postgres\n")
 
 	router := chi.NewRouter()
+
 	router.Use(middleware.RequestID)
 	router.Use(middleware_logger.MyLogger(logger))
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
+
 	router.Post("/url", save_handler.NewSaveHandler(logger, storage))
 	router.Get("/{alias}", redirect_handler.RedirectHandlerConstructor(logger, storage))
+	router.Put("/url/{alias}", update_handler.NewUpdateHandler(logger, storage)) // Обновить существующий URL
+	router.Delete("/url/{alias}", delete_handler.NewDeleteHandler(logger, storage))
 
 	server := http.Server{
 		Addr:         cnfg.HttpInfo.Port,

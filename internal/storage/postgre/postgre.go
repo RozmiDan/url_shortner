@@ -75,6 +75,18 @@ func (s *Storage) GetURL(alias string) (string, error) {
 }
 
 func (s *Storage) DeleteURL(alias string) error {
+	const op = "storage.postgre.DeleteURL"
+
+	query := `
+		DELETE 
+	`
+
+
+	return nil
+}
+
+func UpdateURL(currAlias string, newAlias string) error {
 	//TODO
+	
 	return nil
 }
