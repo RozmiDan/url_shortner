@@ -75,18 +75,40 @@ func (s *Storage) GetURL(alias string) (string, error) {
 }
 
 func (s *Storage) DeleteURL(alias string) error {
-	const op = "storage.postgre.DeleteURL"
+	// const op = "storage.postgre.DeleteURL"
 
-	query := `
-		DELETE 
-	`
-
+	// query := `
+	// 	DELETE
+	// `
 
 	return nil
 }
 
-func UpdateURL(currAlias string, newAlias string) error {
-	//TODO
-	
+func (s *Storage) UpdateURL(currAlias string, newAlias string) error {
+	const op = "storage.postgre.UpdateURL"
+
+	query := `
+		UPDATE url 
+		SET alias = $1
+		WHERE alias = $2;
+	`
+
+	cmdTag, err := s.conn.Exec(context.Background(), query, newAlias, currAlias)
+	if err != nil {
+		var pgErr *pgconn.PgError
+
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				return storage.ErrAliasExists
+			}
+		}
+
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return storage.ErrAliasNotFound
+	}
+
 	return nil
 }

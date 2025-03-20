@@ -1,12 +1,16 @@
 package update_handler
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 
+	"github.com/RozmiDan/url_shortener/internal/storage/postgre"
+	"github.com/RozmiDan/url_shortener/internal/usecase/random"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
+	"github.com/jackc/pgx"
 )
 
 type URLUpdater interface {
@@ -14,7 +18,7 @@ type URLUpdater interface {
 }
 
 type Request struct {
-	NewAlias string `json:"newAlias"`
+	NewAlias string `json:"newAlias,omitempty"`
 }
 
 type Response struct {
@@ -22,6 +26,8 @@ type Response struct {
 	Error  string `json:"error,omitempty"`
 	Alias  string `json:"alias"`
 }
+
+const aliasLength = 8
 
 func NewUpdateHandler(logger *slog.Logger, storage URLUpdater) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +40,7 @@ func NewUpdateHandler(logger *slog.Logger, storage URLUpdater) http.HandlerFunc 
 
 		var req Request
 
-		reqAlias := chi.URLParam(r, "alias")
+		curAlias := chi.URLParam(r, "alias")
 
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
@@ -48,12 +54,16 @@ func NewUpdateHandler(logger *slog.Logger, storage URLUpdater) http.HandlerFunc 
 
 		logger.Info("request body decoded", slog.Any("request", req))
 
+		newAlias := req.NewAlias
+
 		if req.NewAlias == "" {
-			alias = random.NewAliasForURL(aliasLength)
+			newAlias = random.NewAliasForURL(aliasLength)
 		}
 
-
-
+		if err := postgre.UpdateURL(curAlias, newAlias); err != nil{
+			if errors.As(err, pgx.PgError)
+			
+		}
 
 	}
 }
