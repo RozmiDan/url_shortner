@@ -16,26 +16,30 @@ type URLGetter interface {
 }
 
 type Response struct {
-	err    error
-	status string
+	Error  string `json:"error,omitempty"`
+	Status string `json:"status"`
+	URL    string `json:"url,omitempty"`
 }
 
-func RedirectHandlerConstructor(logger *slog.Logger, urlGetter URLGetter) http.HandlerFunc {
+func NewUpdateHandler(logger *slog.Logger, urlGetter URLGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const info = "redirect_handler.RedirectHandlerConstruction"
-		logger = logger.With(slog.String("op", info),
+
+		const op = "redirect_handler.RedirectHandlerConstruction"
+
+		logger = logger.With(slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())))
 
 		reqAlias := chi.URLParam(r, "alias")
 
-		if reqAlias == "" {
-			logger.Error("requested alias is empty")
-			render.JSON(w, r, Response{
-				err:    errors.New("requested alias is empty"),
-				status: "Error",
-			})
-			return
-		}
+		// if reqAlias == "" {
+		// 	logger.Error("requested alias is empty")
+		// 	render.Status(r, http.StatusBadRequest)
+		// 	render.JSON(w, r, Response{
+		// 		Status: "Error",
+		// 		Error:  "requested alias is empty",
+		// 	})
+		// 	return
+		// }
 
 		logger.Info("request alias is valid")
 
@@ -44,21 +48,31 @@ func RedirectHandlerConstructor(logger *slog.Logger, urlGetter URLGetter) http.H
 		if err != nil {
 			if errors.Is(err, storage.ErrURLNotFound) {
 				logger.Error("URL not found", slog.String("alias", reqAlias))
+				render.Status(r, http.StatusNotFound)
 				render.JSON(w, r, Response{
-					err:    err,
-					status: "Error",
+					Status: "Error",
+					Error:  "URL not found",
 				})
 				return
 			}
-			logger.Error("Error while getting url", slog.String("alias", reqAlias))
+
+			logger.Error("Error while getting url", slog.Any("err", err))
+			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, Response{
-				err:    err,
-				status: "Error",
+				Status: "Error",
+				Error:  "internal error",
 			})
 			return
 		}
+
 		logger.Info("url was found", slog.String("url", url))
 
-		http.Redirect(w, r, url, http.StatusFound)
+		// http.Redirect(w, r, url, http.StatusFound)
+
+		render.Status(r, http.StatusOK)
+		render.JSON(w, r, Response{
+			Status: "OK",
+			URL:    url,
+		})
 	}
 }

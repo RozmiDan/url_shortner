@@ -3,15 +3,18 @@ package redirect_handler_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	redirect_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/redirect"
+	"github.com/RozmiDan/url_shortener/internal/storage"
 	"github.com/go-chi/chi"
+	"github.com/go-chi/render"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
+	"gopkg.in/go-playground/assert.v1"
 )
 
 type MockURLGetter struct {
@@ -30,57 +33,81 @@ type URLGetter interface {
 func TestGetHandler(t *testing.T) {
 
 	testCases := []struct {
-		name           string
-		alias          string
-		url            string
-		mockErr        error
-		expectedStatus int
+		name             string
+		alias            string
+		mockURL          string
+		mockErr          error
+		expectedStatus   int
+		expectedResponse redirect_handler.Response
+		expectCall       bool
 	}{
 		{
 			name:           "success",
-			alias:          "test_alias",
-			url:            "https://google.com",
+			alias:          "valid-alias",
+			mockURL:        "https://google.com",
 			mockErr:        nil,
-			expectedStatus: http.StatusFound,
+			expectedStatus: http.StatusOK,
+			expectedResponse: redirect_handler.Response{
+				Status: "OK",
+				URL:    "https://google.com",
+			},
+			expectCall: true,
 		},
 		{
-			name:           "not found alias",
-			alias:          "unknown_alias",
-			url:            "",
-			mockErr:        errors.New("url not found"),
-			expectedStatus: http.StatusOK,
+			name:           "not found",
+			alias:          "non-existent",
+			mockURL:        "",
+			mockErr:        storage.ErrURLNotFound,
+			expectedStatus: http.StatusNotFound,
+			expectedResponse: redirect_handler.Response{
+				Status: "Error",
+				Error:  "URL not found",
+			},
+			expectCall: true,
+		},
+		{
+			name:           "internal error",
+			alias:          "error-alias",
+			mockURL:        "",
+			mockErr:        errors.New("some internal error"),
+			expectedStatus: http.StatusInternalServerError,
+			expectedResponse: redirect_handler.Response{
+				Status: "Error",
+				Error:  "internal error",
+			},
+			expectCall: true,
 		},
 	}
 
 	logger := slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil))
-	mockGetter := new(MockURLGetter)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockGetter.ExpectedCalls = nil
+			mockGetter := new(MockURLGetter)
+			handler := redirect_handler.NewUpdateHandler(logger, mockGetter)
 
-			mockGetter.On("GetURL", tc.alias).Return(tc.url, tc.mockErr).Once()
-
-			r := chi.NewRouter()
-			r.Get("/{alias}", redirect_handler.RedirectHandlerConstructor(logger, mockGetter))
-
-			ts := httptest.NewServer(r)
-			defer ts.Close()
-
-			client := http.Client{
-				CheckRedirect: func(req *http.Request, via []*http.Request) error {
-					return http.ErrUseLastResponse
-				},
+			if tc.expectCall {
+				mockGetter.On("GetURL", tc.alias).Return(tc.mockURL, tc.mockErr)
 			}
 
-			resp, err := client.Get(ts.URL + "/" + tc.alias)
-			require.NoError(t, err)
+			r := chi.NewRouter()
+			r.Get("/{alias}", handler)
 
-			require.Equal(t, tc.expectedStatus, resp.StatusCode)
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/%s", tc.alias), nil)
+			rec := httptest.NewRecorder()
 
-			if tc.expectedStatus == http.StatusFound {
-				locationURL := resp.Header.Get("Location")
-				require.Equal(t, tc.url, locationURL)
+			r.ServeHTTP(rec, req)
+
+			var response redirect_handler.Response
+			render.DecodeJSON(rec.Body, &response)
+
+			assert.Equal(t, tc.expectedStatus, rec.Code)
+			assert.Equal(t, tc.expectedResponse, response)
+
+			if tc.expectCall {
+				mockGetter.AssertCalled(t, "GetURL", tc.alias)
+			} else {
+				mockGetter.AssertNotCalled(t, "GetURL")
 			}
 		})
 	}

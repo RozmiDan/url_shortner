@@ -54,7 +54,7 @@ func TestSaveHandler(t *testing.T) {
 			name:           "validation error",
 			url:            "not-url",
 			alias:          "fasd",
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusBadRequest,
 			expectedBody:   `{"status":"Error","error":"invalid request parameters"}`,
 		},
 		{
@@ -62,12 +62,11 @@ func TestSaveHandler(t *testing.T) {
 			url:            "https://example.com",
 			alias:          "exists",
 			mockErr:        storage.ErrURLExists,
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusConflict,
 			expectedBody:   `{"status":"Error","error":"URL already exists"}`,
 		},
 	}
 
-	// Отключаем вывод логов
 	logger := slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil))
 
 	mockSaver := new(MockURLSaver)

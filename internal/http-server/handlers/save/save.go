@@ -42,6 +42,7 @@ func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
 			logger.Error("failed to decode request body")
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, Response{
 				Status: "Error",
 				Error:  "failed to decode request",
@@ -54,6 +55,7 @@ func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 		validate := validator.New()
 		if err := validate.Struct(req); err != nil {
 			logger.Error("validation error", slog.Any("error", err))
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, Response{
 				Status: "Error",
 				Error:  "invalid request parameters",
@@ -70,19 +72,27 @@ func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, storage.ErrURLExists) {
 				logger.Error("URL already exists", slog.String("URL", req.URL))
+				render.Status(r, http.StatusConflict)
 				render.JSON(w, r, Response{
 					Status: "Error",
 					Error:  "URL already exists",
 				})
 				return
 			}
+
 			logger.Error("failed to save URL", slog.String("error", err.Error()))
+
+			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, Response{
 				Status: "Error",
-				Error:  "failed to save URL",
+				Error:  "internal error",
 			})
 			return
 		}
+
+		logger.Info("Request has been successfuly done")
+
+		render.Status(r, http.StatusOK)
 		render.JSON(w, r, Response{
 			Status: "OK",
 			Alias:  alias,

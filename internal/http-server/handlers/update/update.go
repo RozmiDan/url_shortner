@@ -5,12 +5,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/RozmiDan/url_shortener/internal/storage/postgre"
-	"github.com/RozmiDan/url_shortener/internal/usecase/random"
+	"github.com/RozmiDan/url_shortener/internal/storage"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
-	"github.com/jackc/pgx"
 )
 
 type URLUpdater interface {
@@ -18,18 +16,15 @@ type URLUpdater interface {
 }
 
 type Request struct {
-	NewAlias string `json:"newAlias,omitempty"`
+	NewAlias string `json:"newAlias"`
 }
 
 type Response struct {
 	Status string `json:"status"`
 	Error  string `json:"error,omitempty"`
-	Alias  string `json:"alias"`
 }
 
-const aliasLength = 8
-
-func NewUpdateHandler(logger *slog.Logger, storage URLUpdater) http.HandlerFunc {
+func NewUpdateHandler(logger *slog.Logger, urlUpdater URLUpdater) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.update.newupdatehandler"
 
@@ -38,13 +33,22 @@ func NewUpdateHandler(logger *slog.Logger, storage URLUpdater) http.HandlerFunc 
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		var req Request
-
 		curAlias := chi.URLParam(r, "alias")
+		if curAlias == "" {
+			logger.Error("empty current alias")
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, Response{
+				Status: "Error",
+				Error:  "empty current alias",
+			})
+			return
+		}
 
+		var req Request
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
 			logger.Error("failed to decode request body")
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, Response{
 				Status: "Error",
 				Error:  "failed to decode request",
@@ -52,18 +56,63 @@ func NewUpdateHandler(logger *slog.Logger, storage URLUpdater) http.HandlerFunc 
 			return
 		}
 
-		logger.Info("request body decoded", slog.Any("request", req))
+		logger.Info("request body decoded\n", slog.Any("request", req))
 
 		newAlias := req.NewAlias
 
+		if newAlias == curAlias {
+			logger.Error("the same alias")
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, Response{
+				Status: "Error",
+				Error:  "new alias must be different",
+			})
+			return
+		}
+
 		if req.NewAlias == "" {
-			newAlias = random.NewAliasForURL(aliasLength)
+			logger.Error("new alias is empty")
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, Response{
+				Status: "Error",
+				Error:  "new alias is required",
+			})
+			return
 		}
 
-		if err := postgre.UpdateURL(curAlias, newAlias); err != nil{
-			if errors.As(err, pgx.PgError)
-			
+		if err := urlUpdater.UpdateURL(curAlias, newAlias); err != nil {
+			if errors.Is(err, storage.ErrAliasExists) {
+				logger.Error("Cant update alias\n", slog.Any("err", err))
+				render.Status(r, http.StatusConflict)
+				render.JSON(w, r, Response{
+					Status: "Error",
+					Error:  "alias already exists",
+				})
+				return
+			} else if errors.Is(err, storage.ErrAliasNotFound) {
+				logger.Error("Cant update alias\n", slog.Any("err", err))
+				render.Status(r, http.StatusNotFound)
+				render.JSON(w, r, Response{
+					Status: "Error",
+					Error:  "alias not found",
+				})
+				return
+			}
+
+			logger.Error("Cant update alias\n", slog.Any("err", err))
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, Response{
+				Status: "Error",
+				Error:  "internal error",
+			})
+			return
 		}
 
+		logger.Info("Elias has been successfully updated")
+
+		render.Status(r, http.StatusOK)
+		render.JSON(w, r, Response{
+			Status: "OK",
+		})
 	}
 }

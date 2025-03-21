@@ -11,7 +11,6 @@ import (
 
 	"github.com/RozmiDan/url_shortener/db"
 	"github.com/RozmiDan/url_shortener/internal/config"
-	delete_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/delete"
 	redirect_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/redirect"
 	save_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/save"
 	update_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/update"
@@ -57,9 +56,9 @@ func Run(cnfg *config.Config) {
 	router.Use(middleware.URLFormat)
 
 	router.Post("/url", save_handler.NewSaveHandler(logger, storage))
-	router.Get("/{alias}", redirect_handler.RedirectHandlerConstructor(logger, storage))
-	router.Put("/url/{alias}", update_handler.NewUpdateHandler(logger, storage)) // Обновить существующий URL
-	router.Delete("/url/{alias}", delete_handler.NewDeleteHandler(logger, storage))
+	router.Get("/{alias}", redirect_handler.NewUpdateHandler(logger, storage))
+	router.Put("/url/{alias}", update_handler.NewUpdateHandler(logger, storage))
+	//router.Delete("/url/{alias}", delete_handler.NewDeleteHandler(logger, storage))
 
 	server := http.Server{
 		Addr:         cnfg.HttpInfo.Port,

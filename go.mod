@@ -8,6 +8,7 @@ require (
 	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/gavv/httpexpect/v2 v2.17.0
 	github.com/go-chi/chi v1.5.5
+	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-chi/render v1.0.3
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/ilyakaznacheev/cleanenv v1.5.0
