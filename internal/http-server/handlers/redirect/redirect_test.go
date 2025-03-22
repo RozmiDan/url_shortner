@@ -84,7 +84,7 @@ func TestGetHandler(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockGetter := new(MockURLGetter)
-			handler := redirect_handler.NewUpdateHandler(logger, mockGetter)
+			handler := redirect_handler.NewRedirectHandler(logger, mockGetter)
 
 			if tc.expectCall {
 				mockGetter.On("GetURL", tc.alias).Return(tc.mockURL, tc.mockErr)

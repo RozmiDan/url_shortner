@@ -23,3 +23,7 @@ db-up:
 db-down:
 	@echo "Остановка контейнера PostgreSQL..."
 	docker stop local-postgres
+
+# Run docker compose (with backend and db)
+compose-up: 
+	docker compose -f docker-compose.yaml up -d --build

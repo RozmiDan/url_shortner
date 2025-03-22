@@ -20,6 +20,16 @@ type Response struct {
 	Error  string `json:"error,omitempty"`
 }
 
+// @Title Delete URL by alias
+// @Description Delete existing short URL
+// @Tags url
+// @Accept  json
+// @Produce json
+// @Param   alias path string true "Short URL alias"
+// @Success 200 {object} Response
+// @Failure 404 {object} Response "Alias not found"
+// @Failure 500 {object} Response "Internal server error"
+// @Router /url/{alias} [delete]
 func NewDeleteHandler(logger *slog.Logger, urlDeleter URLDeleter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.delete.newsavehandler"

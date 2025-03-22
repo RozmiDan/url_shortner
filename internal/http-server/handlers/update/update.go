@@ -24,6 +24,19 @@ type Response struct {
 	Error  string `json:"error,omitempty"`
 }
 
+// @Title Update URL alias
+// @Description Update existing short URL alias
+// @Tags url
+// @Accept  json
+// @Produce json
+// @Param   alias  path  string  true  "Current short URL alias"
+// @Param   input  body  Request  true  "New alias data"
+// @Success 200 {object} Response
+// @Failure 400 {object} Response "Invalid input data"
+// @Failure 404 {object} Response "Alias not found"
+// @Failure 409 {object} Response "New alias already exists"
+// @Failure 500 {object} Response "Internal server error"
+// @Router /url/{alias} [put]
 func NewUpdateHandler(logger *slog.Logger, urlUpdater URLUpdater) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.update.newupdatehandler"

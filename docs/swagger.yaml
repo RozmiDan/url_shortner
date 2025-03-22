@@ -1,0 +1,183 @@
+definitions:
+  delete_handler.Response:
+    properties:
+      error:
+        type: string
+      status:
+        type: string
+    type: object
+  redirect_handler.Response:
+    properties:
+      error:
+        type: string
+      status:
+        type: string
+      url:
+        type: string
+    type: object
+  save_handler.Request:
+    properties:
+      alias:
+        type: string
+      url:
+        type: string
+    required:
+    - url
+    type: object
+  save_handler.Response:
+    properties:
+      alias:
+        type: string
+      error:
+        type: string
+      status:
+        type: string
+    type: object
+  update_handler.Request:
+    properties:
+      newAlias:
+        type: string
+    type: object
+  update_handler.Response:
+    properties:
+      error:
+        type: string
+      status:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /{alias}:
+    get:
+      consumes:
+      - application/json
+      description: Return URL for redirect to original by short alias
+      parameters:
+      - description: Short URL alias
+        in: path
+        name: alias
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Redirect to original URL
+          schema:
+            type: string
+        "404":
+          description: Alias not found
+          schema:
+            $ref: '#/definitions/redirect_handler.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/redirect_handler.Response'
+      tags:
+      - redirect
+  /url:
+    post:
+      consumes:
+      - application/json
+      description: Creates a short URL. If alias is not specified, a random string
+        of 6 characters is generated.
+      parameters:
+      - description: URL Saving Parameters
+        in: body
+        name: Request
+        required: true
+        schema:
+          $ref: '#/definitions/save_handler.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/save_handler.Response'
+        "400":
+          description: invalid request parameters
+          schema:
+            $ref: '#/definitions/save_handler.Response'
+        "409":
+          description: URL already exists
+          schema:
+            $ref: '#/definitions/save_handler.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/save_handler.Response'
+      summary: Creates a short URL
+      tags:
+      - url
+  /url/{alias}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete existing short URL
+      parameters:
+      - description: Short URL alias
+        in: path
+        name: alias
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/delete_handler.Response'
+        "404":
+          description: Alias not found
+          schema:
+            $ref: '#/definitions/delete_handler.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/delete_handler.Response'
+      tags:
+      - url
+    put:
+      consumes:
+      - application/json
+      description: Update existing short URL alias
+      parameters:
+      - description: Current short URL alias
+        in: path
+        name: alias
+        required: true
+        type: string
+      - description: New alias data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/update_handler.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/update_handler.Response'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/update_handler.Response'
+        "404":
+          description: Alias not found
+          schema:
+            $ref: '#/definitions/update_handler.Response'
+        "409":
+          description: New alias already exists
+          schema:
+            $ref: '#/definitions/update_handler.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/update_handler.Response'
+      tags:
+      - url
+swagger: "2.0"

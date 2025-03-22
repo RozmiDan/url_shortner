@@ -29,6 +29,18 @@ type Response struct {
 	Alias  string `json:"alias,omitempty"`
 }
 
+// SaveURLHandler godoc
+// @Summary      Creates a short URL
+// @Description  Creates a short URL. If alias is not specified, a random string of 6 characters is generated.
+// @Tags         url
+// @Accept       json
+// @Produce      json
+// @Param        Request  body     Request  true  "URL Saving Parameters"
+// @Success      200      {object} Response
+// @Failure      400      {object} Response "invalid request parameters"
+// @Failure      409      {object} Response "URL already exists"
+// @Failure      500      {object} Response "Internal server error"
+// @Router       /url [post]
 func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.save.newsavehandler"

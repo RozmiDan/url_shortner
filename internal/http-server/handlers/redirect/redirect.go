@@ -21,7 +21,17 @@ type Response struct {
 	URL    string `json:"url,omitempty"`
 }
 
-func NewUpdateHandler(logger *slog.Logger, urlGetter URLGetter) http.HandlerFunc {
+// @Title Get URL by alias
+// @Description Return URL for redirect to original by short alias
+// @Tags redirect
+// @Accept  json
+// @Produce json
+// @Param   alias  path  string  true  "Short URL alias"
+// @Success 200 {string} string "Redirect to original URL"
+// @Failure 404 {object} Response "Alias not found"
+// @Failure 500 {object} Response "Internal server error"
+// @Router /{alias} [get]
+func NewRedirectHandler(logger *slog.Logger, urlGetter URLGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		const op = "redirect_handler.RedirectHandlerConstruction"
