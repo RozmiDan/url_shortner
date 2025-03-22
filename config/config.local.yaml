@@ -12,8 +12,8 @@ http:
   idle_timeout: 60s
 
 postgres:
-  url:          "postgres://url_shortner:user_password@postgres:5432/mydb?sslmode=disable"
-  host:         "postgres"
+  url:          "postgres://url_shortner:user_password@localhost:5432/mydb?sslmode=disable"
+  host:         "localhost"
   port:         5432
   database:     "mydb"     
   user:         "url_shortner"

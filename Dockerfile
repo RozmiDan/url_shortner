@@ -18,9 +18,9 @@ WORKDIR /app
 
 COPY --from=builder /app/url_shortener /app/url_shortener
 
-COPY config/config.yaml /app/config.yaml
+COPY config/config.prod.yaml /app/config.prod.yaml
 
-ENV CONFIG_PATH="/app/config.yaml"
+ENV CONFIG_PATH="/app/config.prod.yaml"
 
 EXPOSE 8080
 
