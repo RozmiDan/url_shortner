@@ -82,12 +82,12 @@ func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 
 		_, err = urlSaver.SaveURL(req.URL, alias)
 		if err != nil {
-			if errors.Is(err, storage.ErrURLExists) {
-				logger.Error("URL already exists", slog.String("URL", req.URL))
+			if errors.Is(err, storage.ErrAliasExists) {
+				logger.Error("Alias already exists", slog.String("URL", req.URL))
 				render.Status(r, http.StatusConflict)
 				render.JSON(w, r, Response{
 					Status: "Error",
-					Error:  "URL already exists",
+					Error:  "Alias already exists",
 				})
 				return
 			}

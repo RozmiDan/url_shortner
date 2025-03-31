@@ -43,8 +43,9 @@ func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
+			// TODO
 			if pgErr.Code == "23505" {
-				return 0, storage.ErrURLExists
+				return 0, storage.ErrAliasExists
 			}
 		}
 		return 0, fmt.Errorf("%s: %w", op, err)

@@ -61,9 +61,9 @@ func TestSaveHandler(t *testing.T) {
 			name:           "URL already exists",
 			url:            "https://example.com",
 			alias:          "exists",
-			mockErr:        storage.ErrURLExists,
+			mockErr:        storage.ErrAliasExists,
 			expectedStatus: http.StatusConflict,
-			expectedBody:   `{"status":"Error","error":"URL already exists"}`,
+			expectedBody:   `{"status":"Error","error":"Alias already exists"}`,
 		},
 	}
 
