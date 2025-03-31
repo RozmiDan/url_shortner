@@ -10,9 +10,11 @@ import (
 	redirect_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/redirect"
 	save_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/save"
 	update_handler "github.com/RozmiDan/url_shortener/internal/http-server/handlers/update"
-	middleware_logger "github.com/RozmiDan/url_shortener/internal/http-server/middleware"
+	middleware_logger "github.com/RozmiDan/url_shortener/internal/http-server/middleware/logger"
+	middleware_metrics "github.com/RozmiDan/url_shortener/internal/http-server/middleware/metrics"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -28,6 +30,7 @@ func InitServer(cnfg *config.Config, logger *slog.Logger, db DataBase) *http.Ser
 
 	router.Use(middleware.RequestID)
 	router.Use(middleware_logger.MyLogger(logger))
+	router.Use(middleware_metrics.MetricsMiddleware)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
@@ -36,6 +39,7 @@ func InitServer(cnfg *config.Config, logger *slog.Logger, db DataBase) *http.Ser
 	router.Get("/swagger/*", httpSwagger.WrapHandler)
 	router.Put("/url/{alias}", update_handler.NewUpdateHandler(logger, db))
 	router.Delete("/url/{alias}", delete_handler.NewDeleteHandler(logger, db))
+	router.Handle("/metrics", promhttp.Handler())
 
 	server := &http.Server{
 		Addr:         cnfg.HttpInfo.Port,

@@ -13,6 +13,7 @@ import (
 
 	"github.com/RozmiDan/url_shortener/internal/config"
 	"github.com/RozmiDan/url_shortener/internal/http-server/server"
+	"github.com/RozmiDan/url_shortener/internal/metrics"
 	"github.com/RozmiDan/url_shortener/internal/storage/postgre"
 	"github.com/RozmiDan/url_shortener/pkg/logger"
 	"github.com/jackc/pgx"
@@ -43,6 +44,10 @@ func Run(cnfg *config.Config) {
 	}
 
 	logger.Info("Connected postgres\n")
+
+	metrics.RegisterMetrics()
+
+	logger.Info("Metrics was registered\n")
 
 	server := server.InitServer(cnfg, logger, storage)
 
