@@ -14,6 +14,7 @@ import (
 	middleware_metrics "github.com/RozmiDan/url_shortener/internal/http-server/middleware/metrics"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -33,6 +34,13 @@ func InitServer(cnfg *config.Config, logger *slog.Logger, db DataBase) *http.Ser
 	router.Use(middleware_metrics.MetricsMiddleware)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
 
 	router.Post("/url", save_handler.NewSaveHandler(logger, db))
 	router.Get("/{alias}", redirect_handler.NewRedirectHandler(logger, db))
