@@ -24,7 +24,6 @@ func Run(cnfg *config.Config) {
 	logger := logger.NewLogger(cnfg.Env)
 
 	logger.Info("url-shortner started")
-	logger.Info("url-shortner started")
 	logger.Debug("debug mode")
 
 	pgxConf := pgx.ConnConfig{
