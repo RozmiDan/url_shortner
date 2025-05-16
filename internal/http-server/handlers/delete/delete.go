@@ -51,11 +51,11 @@ func NewDeleteHandler(logger *slog.Logger, urlDeleter URLDeleter) http.HandlerFu
 			return
 		}
 
-		logger.Info("request body decoded\n")
+		//logger.Info("request body decoded\n")
 
 		if err := urlDeleter.DeleteURL(reqAlias); err != nil {
 			if errors.Is(err, storage.ErrAliasNotFound) {
-				logger.Error("Cant delete alias\n", slog.Any("err", err))
+				logger.Debug("Cant delete alias\n", slog.Any("err", err))
 				render.Status(r, http.StatusNotFound)
 				render.JSON(w, r, Response{
 					Status: "Error",

@@ -1,0 +1,74 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      imagePullSecrets:
+        - name: ycr-secret
+      initContainers:
+        - name: init-pv
+          image: busybox:stable
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /pv/pgdata
+          volumeMounts:
+            - name: pg-data
+              mountPath: /pv
+      containers:
+        - name: postgres
+          image: cr.yandex/crpdicuovcl5jupslln1/postgres:17
+          imagePullPolicy: Always
+          env:
+            - name: POSTGRES_DB
+              value: "mydb"
+            - name: POSTGRES_USER
+              value: "url_shortner"
+            - name: POSTGRES_PASSWORD
+              value: "user_password"
+            # не нужно менять PGDATA, используем дефолт /var/lib/postgresql/data
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: pg-data
+              mountPath: /var/lib/postgresql/data
+              subPath: pgdata
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+  volumeClaimTemplates:
+    - metadata:
+        name: pg-data
+      spec:
+        accessModes: [ ReadWriteOnce ]
+        resources:
+          requests:
+            storage: 5Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

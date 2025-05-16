@@ -42,6 +42,7 @@ func Run(cnfg *config.Config) {
 		logger.Error("Cant open database", slog.Any("err", err))
 		os.Exit(1)
 	}
+	defer storage.Close()
 
 	logger.Info("Connected postgres\n")
 

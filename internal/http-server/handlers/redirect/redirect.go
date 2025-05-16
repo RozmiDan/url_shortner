@@ -41,23 +41,13 @@ func NewRedirectHandler(logger *slog.Logger, urlGetter URLGetter) http.HandlerFu
 
 		reqAlias := chi.URLParam(r, "alias")
 
-		// if reqAlias == "" {
-		// 	logger.Error("requested alias is empty")
-		// 	render.Status(r, http.StatusBadRequest)
-		// 	render.JSON(w, r, Response{
-		// 		Status: "Error",
-		// 		Error:  "requested alias is empty",
-		// 	})
-		// 	return
-		// }
-
-		logger.Info("request alias is valid")
+		//logger.Info("request alias is valid")
 
 		url, err := urlGetter.GetURL(reqAlias)
 
 		if err != nil {
 			if errors.Is(err, storage.ErrURLNotFound) {
-				logger.Error("URL not found", slog.String("alias", reqAlias))
+				logger.Debug("URL not found", slog.String("alias", reqAlias))
 				render.Status(r, http.StatusNotFound)
 				render.JSON(w, r, Response{
 					Status: "Error",
@@ -75,7 +65,7 @@ func NewRedirectHandler(logger *slog.Logger, urlGetter URLGetter) http.HandlerFu
 			return
 		}
 
-		logger.Info("url was found", slog.String("url", url))
+		//logger.Info("url was found", slog.String("url", url))
 
 		// http.Redirect(w, r, url, http.StatusFound)
 

@@ -8,25 +8,31 @@ import (
 	"github.com/RozmiDan/url_shortener/internal/storage"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Storage struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 func New(DBurl string) (*Storage, error) {
 	const op = "storage.postgre.New"
 
-	connect, err := pgx.Connect(context.Background(), DBurl)
+	// Создаем конфигурацию пула
+	config, err := pgxpool.ParseConfig(DBurl)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return &Storage{conn: connect}, nil
-}
+	config.MaxConns = 50
+	config.MinConns = 10
 
-func NewFromConn(conn *pgx.Conn) *Storage {
-	return &Storage{conn: conn}
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &Storage{pool: pool}, nil
 }
 
 func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
@@ -39,7 +45,7 @@ func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
 	`
 
 	var id int64
-	err := s.conn.QueryRow(context.Background(), query, alias, urlToSave).Scan(&id)
+	err := s.pool.QueryRow(context.Background(), query, alias, urlToSave).Scan(&id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -63,7 +69,7 @@ func (s *Storage) GetURL(alias string) (string, error) {
 	`
 	var result string
 
-	err := s.conn.QueryRow(context.Background(), query, alias).Scan(&result)
+	err := s.pool.QueryRow(context.Background(), query, alias).Scan(&result)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -83,7 +89,7 @@ func (s *Storage) DeleteURL(alias string) error {
 		WHERE alias = $1;
 	`
 
-	cmdTag, err := s.conn.Exec(context.Background(), query, alias)
+	cmdTag, err := s.pool.Exec(context.Background(), query, alias)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -104,7 +110,7 @@ func (s *Storage) UpdateURL(currAlias string, newAlias string) error {
 		WHERE alias = $2;
 	`
 
-	cmdTag, err := s.conn.Exec(context.Background(), query, newAlias, currAlias)
+	cmdTag, err := s.pool.Exec(context.Background(), query, newAlias, currAlias)
 	if err != nil {
 		var pgErr *pgconn.PgError
 
@@ -122,4 +128,10 @@ func (s *Storage) UpdateURL(currAlias string, newAlias string) error {
 	}
 
 	return nil
+}
+
+func (s *Storage) Close() {
+	if s.pool != nil {
+		s.pool.Close()
+	}
 }

@@ -48,7 +48,7 @@ func NewUpdateHandler(logger *slog.Logger, urlUpdater URLUpdater) http.HandlerFu
 
 		curAlias := chi.URLParam(r, "alias")
 		if curAlias == "" {
-			logger.Error("empty current alias")
+			logger.Debug("empty current alias")
 			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, Response{
 				Status: "Error",
@@ -69,12 +69,12 @@ func NewUpdateHandler(logger *slog.Logger, urlUpdater URLUpdater) http.HandlerFu
 			return
 		}
 
-		logger.Info("request body decoded\n", slog.Any("request", req))
+		//logger.Info("request body decoded\n", slog.Any("request", req))
 
 		newAlias := req.NewAlias
 
 		if newAlias == curAlias {
-			logger.Error("the same alias")
+			logger.Debug("the same alias")
 			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, Response{
 				Status: "Error",
@@ -84,7 +84,7 @@ func NewUpdateHandler(logger *slog.Logger, urlUpdater URLUpdater) http.HandlerFu
 		}
 
 		if req.NewAlias == "" {
-			logger.Error("new alias is empty")
+			logger.Debug("new alias is empty")
 			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, Response{
 				Status: "Error",
@@ -95,7 +95,7 @@ func NewUpdateHandler(logger *slog.Logger, urlUpdater URLUpdater) http.HandlerFu
 
 		if err := urlUpdater.UpdateURL(curAlias, newAlias); err != nil {
 			if errors.Is(err, storage.ErrAliasExists) {
-				logger.Error("Cant update alias\n", slog.Any("err", err))
+				logger.Debug("Cant update alias\n", slog.Any("err", err))
 				render.Status(r, http.StatusConflict)
 				render.JSON(w, r, Response{
 					Status: "Error",
@@ -103,7 +103,7 @@ func NewUpdateHandler(logger *slog.Logger, urlUpdater URLUpdater) http.HandlerFu
 				})
 				return
 			} else if errors.Is(err, storage.ErrAliasNotFound) {
-				logger.Error("Cant update alias\n", slog.Any("err", err))
+				logger.Debug("Cant update alias\n", slog.Any("err", err))
 				render.Status(r, http.StatusNotFound)
 				render.JSON(w, r, Response{
 					Status: "Error",
@@ -121,7 +121,7 @@ func NewUpdateHandler(logger *slog.Logger, urlUpdater URLUpdater) http.HandlerFu
 			return
 		}
 
-		logger.Info("Elias has been successfully updated")
+		//logger.Info("Elias has been successfully updated")
 
 		render.Status(r, http.StatusOK)
 		render.JSON(w, r, Response{

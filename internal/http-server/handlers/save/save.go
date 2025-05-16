@@ -53,7 +53,7 @@ func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 		var req Request
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
-			logger.Error("failed to decode request body")
+			logger.Debug("failed to decode request body")
 			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, Response{
 				Status: "Error",
@@ -62,7 +62,7 @@ func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 			return
 		}
 
-		logger.Info("request body decoded", slog.Any("request", req))
+		//logger.Info("request body decoded", slog.Any("request", req))
 
 		validate := validator.New()
 		if err := validate.Struct(req); err != nil {
@@ -83,7 +83,7 @@ func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 		_, err = urlSaver.SaveURL(req.URL, alias)
 		if err != nil {
 			if errors.Is(err, storage.ErrAliasExists) {
-				logger.Error("Alias already exists", slog.String("URL", req.URL))
+				logger.Debug("Alias already exists", slog.String("URL", req.URL))
 				render.Status(r, http.StatusConflict)
 				render.JSON(w, r, Response{
 					Status: "Error",
@@ -102,7 +102,7 @@ func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 			return
 		}
 
-		logger.Info("Request has been successfuly done")
+		//logger.Info("Request has been successfuly done")
 
 		render.Status(r, http.StatusOK)
 		render.JSON(w, r, Response{
