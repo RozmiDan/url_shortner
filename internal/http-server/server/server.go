@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
@@ -20,7 +21,7 @@ import (
 )
 
 type DataBase interface {
-	SaveURL(urlToSave string, alias string) (int64, error)
+	SaveURL(ctx context.Context, urlToSave string, alias string) (int64, error)
 	GetURL(alias string) (string, error)
 	DeleteURL(alias string) error
 	UpdateURL(currAlias string, newAlias string) error

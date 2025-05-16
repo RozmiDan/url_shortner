@@ -1,9 +1,11 @@
 package save_handler
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/RozmiDan/url_shortener/internal/storage"
 	"github.com/RozmiDan/url_shortener/internal/usecase/random"
@@ -12,10 +14,13 @@ import (
 	"github.com/go-playground/validator"
 )
 
-const aliasLength = 6
+const (
+	aliasLength    = 6
+	requestTimeout = 2 * time.Second
+)
 
 type URLSaver interface {
-	SaveURL(urlToSave string, alias string) (int64, error)
+	SaveURL(ctx context.Context, urlToSave string, alias string) (int64, error)
 }
 
 type Request struct {
@@ -43,17 +48,15 @@ type Response struct {
 // @Router       /url [post]
 func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.save.newsavehandler"
 
-		logger = logger.With(
-			slog.String("op", op),
-			slog.String("request_id", middleware.GetReqID(r.Context())),
+		opLogger := logger.With(
+			slog.String("op", "handlers.save.NewSaveHandler"),
+			slog.String("req_id", middleware.GetReqID(r.Context())),
 		)
 
 		var req Request
-		err := render.DecodeJSON(r.Body, &req)
-		if err != nil {
-			logger.Debug("failed to decode request body")
+		if err := render.DecodeJSON(r.Body, &req); err != nil {
+			opLogger.Debug("failed to decode request body", slog.Any("err", err))
 			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, Response{
 				Status: "Error",
@@ -62,11 +65,8 @@ func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 			return
 		}
 
-		//logger.Info("request body decoded", slog.Any("request", req))
-
-		validate := validator.New()
-		if err := validate.Struct(req); err != nil {
-			logger.Error("validation error", slog.Any("error", err))
+		if err := validator.New().Struct(req); err != nil {
+			opLogger.Debug("validation error", slog.Any("err", err))
 			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, Response{
 				Status: "Error",
@@ -80,10 +80,13 @@ func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 			alias = random.NewAliasForURL(aliasLength)
 		}
 
-		_, err = urlSaver.SaveURL(req.URL, alias)
+		ctx, cancel := context.WithTimeout(r.Context(), requestTimeout)
+		defer cancel()
+
+		_, err := urlSaver.SaveURL(ctx, req.URL, alias)
 		if err != nil {
 			if errors.Is(err, storage.ErrAliasExists) {
-				logger.Debug("Alias already exists", slog.String("URL", req.URL))
+				opLogger.Debug("alias already exists", slog.String("alias", alias))
 				render.Status(r, http.StatusConflict)
 				render.JSON(w, r, Response{
 					Status: "Error",
@@ -92,8 +95,7 @@ func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 				return
 			}
 
-			logger.Error("failed to save URL", slog.String("error", err.Error()))
-
+			opLogger.Error("failed to save URL", slog.Any("err", err))
 			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, Response{
 				Status: "Error",
@@ -102,9 +104,7 @@ func NewSaveHandler(logger *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 			return
 		}
 
-		//logger.Info("Request has been successfuly done")
-
-		render.Status(r, http.StatusOK)
+		render.Status(r, http.StatusCreated)
 		render.JSON(w, r, Response{
 			Status: "OK",
 			Alias:  alias,

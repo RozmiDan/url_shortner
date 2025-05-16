@@ -2,6 +2,7 @@ package save_handler_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -19,7 +20,7 @@ type MockURLSaver struct {
 	mock.Mock
 }
 
-func (m *MockURLSaver) SaveURL(urlToSave string, alias string) (int64, error) {
+func (m *MockURLSaver) SaveURL(ctx context.Context, urlToSave string, alias string) (int64, error) {
 	args := m.Called(urlToSave, alias)
 	return args.Get(0).(int64), args.Error(1)
 }

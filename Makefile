@@ -1,4 +1,4 @@
-.PHONY: run-app stop-app db-up db-down prom-up prom-down run-local stop-local
+.PHONY: run-app stop-app db-up db-down prom-up prom-down run-local stop-local run-jmeter
 
 include .env
 export
@@ -70,3 +70,13 @@ compose-up:
 
 compose-down: 
 	docker compose down
+
+run-jmeter:
+	@echo "Запуск JMeter load-тестов..."
+	jmeter -n \
+	  -t jmeter_files/Test_500users.jmx \
+	  -l jmeter_files/log1.jtl \
+	  -j jmeter_files/jmeter.log \
+	  -e \
+	  -o jmeter_files/report
+	@echo "Отчёт сгенерирован в jmeter_files/report"

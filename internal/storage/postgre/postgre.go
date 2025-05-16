@@ -35,17 +35,19 @@ func New(DBurl string) (*Storage, error) {
 	return &Storage{pool: pool}, nil
 }
 
-func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
+func (s *Storage) SaveURL(ctx context.Context, urlToSave string, alias string) (int64, error) {
 	const op = "storage.postgre.SaveURL"
 
 	query := `
 		INSERT INTO url(alias, url)
 		VALUES($1, $2)
-		RETURNING id
+		ON CONFLICT(alias) DO UPDATE
+			SET url = EXCLUDED.url
+		RETURNING id;
 	`
 
 	var id int64
-	err := s.pool.QueryRow(context.Background(), query, alias, urlToSave).Scan(&id)
+	err := s.pool.QueryRow(ctx, query, alias, urlToSave).Scan(&id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
